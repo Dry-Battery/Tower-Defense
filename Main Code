@@ -1,0 +1,231 @@
+# CodeSkulptor runs Python programs in your browser.
+# Click the upper left button to run this simple demo.
+
+# CodeSkulptor is tested to run in recent versions of
+# Chrome, Firefox, and Safari.
+
+import simplegui
+import random
+
+class Base:
+    def __init__(self):
+        self.health = 1000
+        self.level = 1
+        self.image = ""
+    
+    def draw(self,canvas):
+        canvas.draw_polygon([(745,240),(745,395),(590,395),(590,240)],10,'Black','Gray')
+    
+    '''def damage(self):
+        if self.health <= 0:
+            '''
+
+class Bunker:
+    def __init__(self):
+        self.health = 20
+        self.level = 1
+        self.show = False
+        self.distance = []
+        self.attacking = False
+        self.enemy_pos = []
+        self.enemies = []
+        self.fire_rate = 30
+        self.attack_timer = self.fire_rate
+        self.clicks_left = 2
+        
+    def click(self,pos):
+        if ui.place_tower == True:
+            if self.clicks_left >= 1:
+                self.x = pos[0]
+                self.y = pos[1]
+                self.clicks_left -= 1
+            elif self.clicks_left < 1:
+                self.show = True
+                self.pos = [self.x,self.y]
+                ui.place_tower = False
+                self.clicks_left = 2
+            
+    def attack(self):
+        i = 1
+        for Zombie in zombie.zombies:
+            if dist(self.pos,Zombie.pos) <= 100:
+                self.distance.append(dist(self.pos,Zombie.pos))
+                self.enemies.append(Zombie)
+                if len(self.distance) > 1:
+                    if self.distance[i] < self.distance[i-1]:
+                        if self.enemies[i].health > 0:
+                            self.enemy_pos = [self.enemies[i].x,self.enemies[i].y]
+                            self.attacking = True 
+                if self.attack_timer <= 0:
+                    self.enemies[i].health -= 5
+                    self.attack_timer = self.fire_rate
+                i += 1
+                self.attack_timer -= 1
+            else:
+                self.attacking = False
+            
+    def draw(self,canvas):
+        if self.show == True:
+            self.attack()
+            canvas.draw_polygon([(self.x-10,self.y-10),(self.x-10,self.y+10),(self.x+10,self.y+10),(self.x+10,self.y-10)],1,'Black','Gray')
+            if self.attacking == True:
+                canvas.draw_line((self.pos[0],self.pos[1]),(self.enemy_pos[0],self.enemy_pos[1]),5,'Yellow')
+    
+class Zombie:
+    def __init__(self):
+        self.x = random.randint(-10,-1)
+        self.y = random.randint(229,495)
+        self.pos = [self.x,self.y]
+        self.health = 10
+        self.speed = 0.5
+        self.zombie_amount = random.randint(ui.wave*2,ui.wave*10)
+        self.zombies = []
+        self.total_zombies = 1
+    
+    def spawn(self):
+        self.zombie_amount += random.randint(ui.wave*2,ui.wave*10)
+        for i in range(self.zombie_amount):
+            if self.total_zombies <= 500:
+                z = Zombie()
+                self.total_zombies += 1
+                self.zombies.append(z)
+            
+    def attack(self):
+        if Zombie.x >= 590:
+            Zombie.speed = 0
+            base.health -= 10
+            
+    def move(self):
+        self.x += self.speed*ui.game_speed
+        self.pos = [self.x,self.y]
+
+    def draw(self,canvas):
+        for Zombie in zombie.zombies:
+            if Zombie.health > 0:
+                Zombie.move()
+                canvas.draw_circle((Zombie.x,Zombie.y),5,1,'Green','Green')
+            else:
+                zombie.total_zombies -= 1
+            
+class UI:
+    def __init__(self):
+        self.show = True
+        self.place_tower = False
+        self.spawn_troop = False
+        self.repair = False
+        self.upgrade_bunker = False
+        self.next_wave = False
+        self.points = 500
+        self.game_speed = 1
+        self.wave = 1
+        
+    def click(self,pos):
+        if pos[0] >= 10 and pos[0] <= 130:
+            if pos[1] >= 10 and pos[1] <= 130:
+                if self.place_tower == False:
+                    self.place_tower = True
+                    self.spawn_troop = False
+                    self.repair = False
+                    self.upgrade_bunker = False
+                    self.next_wave = False
+                elif self.place_tower == True:
+                    self.place_tower = False
+                print("Place Tower?",self.place_tower)
+        if pos[0] >= 140 and pos[0] <= 260:
+            if pos[1] >= 10 and pos[1] <= 130:
+                if self.spawn_troop == False:
+                    self.spawn_troop = True
+                    self.place_tower = False
+                    self.repair = False
+                    self.upgrade_bunker = False
+                    self.next_wave = False
+                elif self.spawn_troop == True:
+                    self.spawn_troop = False
+                print("Spawn Troop?",self.spawn_troop)
+        if pos[0] >= 270 and pos[0] <= 390:
+            if pos[1] >= 10 and pos[1] <= 130:
+                if self.repair == False:
+                    self.repair = True
+                    self.place_tower = False
+                    self.spawn_troop = False
+                    self.upgrade_bunker = False
+                    self.next_wave = False
+                elif self.repair == True:
+                    self.repair = False
+                print("Repair?",self.repair)
+        if pos[0] >= 400 and pos[0] <= 520:
+            if pos[1] >= 10 and pos[1] <= 130:
+                if self.upgrade_bunker == False:
+                    self.upgrade_bunker = True
+                    self.place_tower = False
+                    self.spawn_troop = False
+                    self.repair = False
+                    self.next_wave = False
+                elif self.upgrade_bunker == True:
+                    self.upgrade_bunker = False
+                print("Upgrade?",self.upgrade_bunker)
+        if pos[0] >= 530 and pos[0] <= 650:
+            if pos[1] >= 10 and pos[1] <= 130:
+                self.next_wave = True
+                self.wave += 1
+            print("Next Wave?",self.next_wave)
+        if pos[0] >= 660 and pos[0] <= 735:
+            if pos[1] >= 10 and pos[1] <= 130:
+                self.game_speed += 1
+                if self.game_speed > 4:
+                    self.game_speed = 1
+                print("Game Speed",self.game_speed)
+                
+    def spawn_wave(self):
+        if zombie.total_zombies <= 0:
+            self.next_wave == True
+        if self.next_wave == True:
+            zombie.spawn()
+            self.next_wave = False
+        
+    def draw(self,canvas):
+        if self.show == True:
+            canvas.draw_polygon([[5,5],[5,135],[745,135],[745,5]],10,'Red','White')
+            canvas.draw_polygon([(5,140),(5,224),(155,224),(155,140)],10,'Red','White')
+            canvas.draw_polygon([(10,10),(10,130),(130,130),(130,10)],1,'Blue','Black')
+            canvas.draw_polygon([(140,10),(140,130),(260,130),(260,10)],1,'Blue','Black')
+            canvas.draw_polygon([(270,10),(270,130),(390,130),(390,10)],1,'Blue','Black')
+            canvas.draw_polygon([(400,10),(400,130),(520,130),(520,10)],1,'Blue','Black')
+            canvas.draw_polygon([(530,10),(530,130),(650,130),(650,10)],1,'Blue','Black')
+            canvas.draw_polygon([(660,10),(660,130),(735,130),(735,10)],1,'Blue','Black')
+            coin_text = "Coins: "+str(self.points)
+            wave_text = "Wave: "+str(self.wave)
+            game_speed_text = "Game Speed: "+str(self.game_speed)
+            base_health_text = "Base Health: "+str(base.health)
+            canvas.draw_text(coin_text,(12,160),18,'Black','serif')
+            canvas.draw_text(wave_text,(12,178),18,'Black','serif')
+            canvas.draw_text(game_speed_text,(12,196),18,'Black','serif')
+            canvas.draw_text(base_health_text,(12,214),18,'Black','serif')
+            
+
+base = Base()
+bunker = Bunker()
+ui = UI()
+zombie = Zombie()
+zombie.spawn()
+
+def dist(point1,point2):
+    distance = ((point2[0]-point1[0])**2+(point2[1] - point1[1])**2)**0.5
+    return distance
+
+def draw(canvas):
+    canvas.draw_polygon([(0,0),(0,500),(750,500),(750,0)],1,'Dark Green','DarkGreen')
+    zombie.draw(canvas)
+    base.draw(canvas)
+    ui.spawn_wave()
+    ui.draw(canvas)
+    bunker.draw(canvas)
+
+def mouseclick_handler(pos):
+    ui.click(pos)
+    bunker.click(pos)
+    
+frame = simplegui.create_frame("Tower Defense", 750, 500)
+frame.set_draw_handler(draw)
+frame.set_mouseclick_handler(mouseclick_handler)
+frame.start()
