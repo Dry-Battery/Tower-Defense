@@ -29,51 +29,62 @@ class Bunker:
         self.attacking = False
         self.enemy_pos = []
         self.enemies = []
-        self.fire_rate = 30
+        self.fire_rate = 15
         self.attack_timer = self.fire_rate
         self.clicks_left = 2
+        self.bunkers = []
         
     def click(self,pos):
         if ui.place_tower == True:
-            if self.clicks_left >= 1:
-                self.x = pos[0]
-                self.y = pos[1]
-                self.clicks_left -= 1
-            elif self.clicks_left < 1:
-                self.show = True
-                self.pos = [self.x,self.y]
-                ui.place_tower = False
-                self.clicks_left = 2
+            if ui.points >= 100:
+                if self.clicks_left > 0:
+                    self.b = Bunker()
+                    self.b.x = pos[0]
+                    self.b.y = pos[1]
+                    self.b.pos = [self.b.x,self.b.y]
+                    self.clicks_left -= 1
+                    self.b.show = True
+                else:
+                    self.clicks_left = 2
+                    self.bunkers.append(self.b)
+                    ui.place_tower = False
+                    ui.points -= 100
             
     def attack(self):
-        i = 1
+        self.attacking = False
         for Zombie in zombie.zombies:
-            if dist(self.pos,Zombie.pos) <= 100:
+            if dist(self.pos,Zombie.pos) <= 150:
                 self.distance.append(dist(self.pos,Zombie.pos))
                 self.enemies.append(Zombie)
-                if len(self.distance) > 1:
-                    if self.distance[i] < self.distance[i-1]:
-                        if self.enemies[i].health > 0:
-                            self.enemy_pos = [self.enemies[i].x,self.enemies[i].y]
-                            self.attacking = True 
-                if self.attack_timer <= 0:
-                    self.enemies[i].health -= 5
-                    self.attack_timer = self.fire_rate
-                i += 1
-                self.attack_timer -= 1
-            else:
-                self.attacking = False
+        for i in range(len(self.enemies)):
+            if len(self.distance) > 1:
+                if self.distance[i] <= self.distance[i-1]:
+                    if self.enemies[i].health > 0:
+                        self.target = self.enemies[i]
+                        self.enemy_pos = [self.target.x,self.target.y]
+                        self.attacking = True
+                    else:
+                        self.target = self.enemies[i-1]
+                        self.enemy_pos = [self.target.x,self.target.y]
+                        self.attacking = True
+                        
+        if self.attack_timer <= 0:    
+            if self.attacking == True:
+                self.target.health -= 10
+            self.attack_timer = self.fire_rate
+        else:
+            self.attack_timer -= ui.game_speed
             
     def draw(self,canvas):
-        if self.show == True:
-            self.attack()
-            canvas.draw_polygon([(self.x-10,self.y-10),(self.x-10,self.y+10),(self.x+10,self.y+10),(self.x+10,self.y-10)],1,'Black','Gray')
-            if self.attacking == True:
-                canvas.draw_line((self.pos[0],self.pos[1]),(self.enemy_pos[0],self.enemy_pos[1]),5,'Yellow')
+        for Bunker in bunker.bunkers:
+            Bunker.attack()
+            canvas.draw_polygon([(Bunker.x-10,Bunker.y-10),(Bunker.x-10,Bunker.y+10),(Bunker.x+10,Bunker.y+10),(Bunker.x+10,Bunker.y-10)],1,'Black','Gray')
+            #if Bunker.attacking == True and Bunker.attack_timer >= -1 and Bunker.attack_timer<=5:
+                #canvas.draw_line((Bunker.pos[0]-10,Bunker.pos[1]),(Bunker.enemy_pos[0],Bunker.enemy_pos[1]),5,'Yellow')
     
 class Zombie:
     def __init__(self):
-        self.x = random.randint(-10,-1)
+        self.x = random.randint(-50,-10)
         self.y = random.randint(229,495)
         self.pos = [self.x,self.y]
         self.health = 10
@@ -83,29 +94,30 @@ class Zombie:
         self.total_zombies = 1
     
     def spawn(self):
-        self.zombie_amount += random.randint(ui.wave*2,ui.wave*10)
+        self.zombie_amount = random.randint(ui.wave*2,ui.wave*10)
         for i in range(self.zombie_amount):
-            if self.total_zombies <= 500:
-                z = Zombie()
-                self.total_zombies += 1
-                self.zombies.append(z)
+            z = Zombie()
+            self.zombies.append(z)
             
     def attack(self):
-        if Zombie.x >= 590:
-            Zombie.speed = 0
-            base.health -= 10
+        for Zombie in zombie.zombies:
+            if Zombie.x >= 590:
+                Zombie.speed = 0
+                base.health -= 10
             
     def move(self):
         self.x += self.speed*ui.game_speed
         self.pos = [self.x,self.y]
 
     def draw(self,canvas):
-        for Zombie in zombie.zombies:
+        for Zombie in zombie.zombies:            
             if Zombie.health > 0:
                 Zombie.move()
+                Zombie.attack()
                 canvas.draw_circle((Zombie.x,Zombie.y),5,1,'Green','Green')
-            else:
-                zombie.total_zombies -= 1
+            if Zombie.health <= 0:
+                ui.points += 10
+                zombie.zombies.remove(Zombie)
             
 class UI:
     def __init__(self):
@@ -116,7 +128,7 @@ class UI:
         self.upgrade_bunker = False
         self.next_wave = False
         self.points = 500
-        self.game_speed = 1
+        self.game_speed = 0
         self.wave = 1
         
     def click(self,pos):
@@ -173,18 +185,19 @@ class UI:
             if pos[1] >= 10 and pos[1] <= 130:
                 self.game_speed += 1
                 if self.game_speed > 4:
-                    self.game_speed = 1
+                    self.game_speed = 0
                 print("Game Speed",self.game_speed)
                 
     def spawn_wave(self):
         if zombie.total_zombies <= 0:
-            self.next_wave == True
+            self.next_wave = True
         if self.next_wave == True:
             zombie.spawn()
             self.next_wave = False
         
     def draw(self,canvas):
         if self.show == True:
+            self.spawn_wave()
             canvas.draw_polygon([[5,5],[5,135],[745,135],[745,5]],10,'Red','White')
             canvas.draw_polygon([(5,140),(5,224),(155,224),(155,140)],10,'Red','White')
             canvas.draw_polygon([(10,10),(10,130),(130,130),(130,10)],1,'Blue','Black')
