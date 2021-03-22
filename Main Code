@@ -14,48 +14,69 @@ class Base:
         self.image = ""
     
     def draw(self,canvas):
-        canvas.draw_polygon([(745,240),(745,395),(590,395),(590,240)],10,'Black','Gray')
+        canvas.draw_polygon([(745,300),(745,340),(705,340),(705,300)],2,'Black','Gray')
     
     '''def damage(self):
         if self.health <= 0:
             '''
 
-class Bunker:
+class Trench:
     def __init__(self):
-        self.health = 20
+        self.health = 40
         self.level = 1
         self.show = False
-        self.distance = []
-        self.attacking = False
+        self.length = 0
         self.enemy_pos = []
         self.enemies = []
-        self.fire_rate = 15
+        self.fire_rate = 60
         self.attack_timer = self.fire_rate
         self.clicks_left = 2
-        self.bunkers = []
+        self.trenches = []
+        self.range = 150
+        self.damage = 4
         
-    def click(self,pos):
-        if ui.place_tower == True:
-            if ui.points >= 100:
-                if self.clicks_left > 0:
-                    self.b = Bunker()
-                    self.b.x = pos[0]
-                    self.b.y = pos[1]
-                    self.b.pos = [self.b.x,self.b.y]
+    def upgrade(self,pos):
+        if ui.upgrade_bunker == True:
+            for Trench in trench.trenches:
+                if ui.points >= Trench.level*100:
+                    if pos[0] >= Trench.x1-10 and pos[0] <= Trench.x1+10:
+                        if pos[0] >= Trench.x2-10 and pos[0] <= Trench.x2+10:
+                            if pos[1] >= Trench.y1 and pos[1] <= Trench.y2:
+                                ui.points -= Trench.level*100
+                                Trench.level += 1
+                                Trench.range += 10
+                                Trench.damage += 5
+        
+    def place(self,pos):
+        if ui.place_trench == True:
+            if ui.points >= 200:
+                if self.clicks_left == 2:
+                    self.t = Trench()
+                    self.t.x1 = pos[0]
+                    self.t.y1 = pos[1]
+                    self.t.pos = [self.t.x1,self.t.y1]
                     self.clicks_left -= 1
-                    self.b.show = True
+                elif self.clicks_left == 1:
+                    self.t.x2 = pos[0]
+                    self.t.y2 = pos[1]
+                    self.t.show = True
                 else:
                     self.clicks_left = 2
-                    self.bunkers.append(self.b)
-                    ui.place_tower = False
-                    ui.points -= 100
-            
+                    self.trenches.append(self.t)
+                    ui.place_trench = False
+                    ui.points -= 200
+                    
+    def click(self,pos):
+        self.upgrade(pos)
+        self.place(pos)
+                    
     def attack(self):
-        self.attacking = False
         for Zombie in zombie.zombies:
-            if dist(self.pos,Zombie.pos) <= 150:
+            if dist(self.pos,Zombie.pos) <= self.range:
                 self.distance.append(dist(self.pos,Zombie.pos))
                 self.enemies.append(Zombie)
+            else:
+                self.attacking = False
         for i in range(len(self.enemies)):
             if len(self.distance) > 1:
                 if self.distance[i] <= self.distance[i-1]:
@@ -70,7 +91,87 @@ class Bunker:
                         
         if self.attack_timer <= 0:    
             if self.attacking == True:
-                self.target.health -= 10
+                self.target.health -= self.damage
+            self.attack_timer = self.fire_rate
+        else:
+            self.attack_timer -= ui.game_speed
+                    
+    def draw(self,canvas):
+        for Trench in trench.trenches:
+            if Trench.show == True:
+                Trench.attack()
+                canvas.draw_line((Trench.x1,Trench.y1),(Trench.x2,Trench.y2),5,'Brown')
+    
+class Bunker:
+    def __init__(self):
+        self.health = 20
+        self.level = 1
+        self.show = False
+        self.distance = []
+        self.attacking = False
+        self.enemy_pos = []
+        self.enemies = []
+        self.fire_rate = 30
+        self.attack_timer = self.fire_rate
+        self.clicks_left = 2
+        self.bunkers = []
+        self.damage = 2
+        self.range = 100
+        
+        
+    def place(self,pos):
+        if ui.place_bunker == True:
+            if ui.points >= 100:
+                if self.clicks_left > 0:
+                    self.b = Bunker()
+                    self.b.x = pos[0]
+                    self.b.y = pos[1]
+                    self.b.pos = [self.b.x,self.b.y]
+                    self.clicks_left -= 1
+                    self.b.show = True
+                else:
+                    self.clicks_left = 2
+                    self.bunkers.append(self.b)
+                    ui.place_tower = False
+                    ui.points -= 100
+            
+    def upgrade(self,pos):
+        if ui.upgrade_bunker == True:
+            for Bunker in bunker.bunkers:
+                if ui.points >= 50*Bunker.level:
+                    if pos[0] >= Bunker.x-5 and pos[0] <= Bunker.x+5:
+                        if pos[1] >= Bunker.y-5 and pos[1] <= Bunker.y+5:
+                            ui.points -= 50*Bunker.level
+                            Bunker.level += 1
+                            Bunker.fire_rate -= 5
+                            Bunker.damage += 2
+                            Bunker.range += 50
+    def click(self,pos):
+        self.upgrade(pos)
+        self.place(pos)
+            
+    def attack(self):
+        for Zombie in zombie.zombies:
+            if dist(self.pos,Zombie.pos) <= self.range:
+                self.distance.append(dist(self.pos,Zombie.pos))
+                self.enemies.append(Zombie)
+            else:
+                self.attacking = False
+        for i in range(len(self.enemies)):
+            if len(self.distance) > 1:
+                if self.distance[i] <= self.distance[i-1]:
+                    if self.enemies[i].health > 0:
+                        self.target = self.enemies[i]
+                        self.enemy_pos = [self.target.x,self.target.y]
+                        self.attacking = True
+                    else:
+                        self.target = self.enemies[i-1]
+                        self.enemy_pos = [self.target.x,self.target.y]
+                        self.attacking = True
+                        
+        if self.attack_timer <= 0:    
+            if self.attacking == True:
+                self.target.health -= self.damage
             self.attack_timer = self.fire_rate
         else:
             self.attack_timer -= ui.game_speed
@@ -78,52 +179,59 @@ class Bunker:
     def draw(self,canvas):
         for Bunker in bunker.bunkers:
             Bunker.attack()
-            canvas.draw_polygon([(Bunker.x-10,Bunker.y-10),(Bunker.x-10,Bunker.y+10),(Bunker.x+10,Bunker.y+10),(Bunker.x+10,Bunker.y-10)],1,'Black','Gray')
-            #if Bunker.attacking == True and Bunker.attack_timer >= -1 and Bunker.attack_timer<=5:
-                #canvas.draw_line((Bunker.pos[0]-10,Bunker.pos[1]),(Bunker.enemy_pos[0],Bunker.enemy_pos[1]),5,'Yellow')
+            canvas.draw_polygon([(Bunker.x-5,Bunker.y-5),(Bunker.x-5,Bunker.y+5),(Bunker.x+5,Bunker.y+5),(Bunker.x+5,Bunker.y-5)],1,'Black','Gray')
+            #if Bunker.attacking == True:
+            #    canvas.draw_line((Bunker.pos[0]-5,Bunker.pos[1]),(Bunker.enemy_pos[0],Bunker.enemy_pos[1]),1.5,'Yellow')
     
 class Zombie:
     def __init__(self):
-        self.x = random.randint(-50,-10)
+        self.x = random.randint(-10,-1)
         self.y = random.randint(229,495)
         self.pos = [self.x,self.y]
         self.health = 10
-        self.speed = 0.5
+        self.speed = 0.275
         self.zombie_amount = random.randint(ui.wave*2,ui.wave*10)
         self.zombies = []
-        self.total_zombies = 1
+        self.total_zombies = 0
+        self.drawn_zombies = 0
     
     def spawn(self):
+        self.zombies = []
         self.zombie_amount = random.randint(ui.wave*2,ui.wave*10)
         for i in range(self.zombie_amount):
             z = Zombie()
+            self.total_zombies += 1
             self.zombies.append(z)
             
     def attack(self):
-        for Zombie in zombie.zombies:
-            if Zombie.x >= 590:
-                Zombie.speed = 0
-                base.health -= 10
+        if self.x >= 590:
+            self.speed = 0
+            base.health -= 10*ui.game_speed
             
     def move(self):
         self.x += self.speed*ui.game_speed
         self.pos = [self.x,self.y]
 
     def draw(self,canvas):
-        for Zombie in zombie.zombies:            
-            if Zombie.health > 0:
-                Zombie.move()
-                Zombie.attack()
-                canvas.draw_circle((Zombie.x,Zombie.y),5,1,'Green','Green')
-            if Zombie.health <= 0:
-                ui.points += 10
-                zombie.zombies.remove(Zombie)
+        zombie.drawn_zombies = 0
+        for Zombie in zombie.zombies:
+            if zombie.drawn_zombies <= 20:            
+                if Zombie.health > 0:
+                    zombie.drawn_zombies += 1
+                    Zombie.attack()
+                    Zombie.move()
+                    canvas.draw_circle((Zombie.x,Zombie.y),5,1,'Green','Green')
+                else:
+                    zombie.total_zombies -= 1
+                    zombie.drawn_zombies -= 1
+                    zombie.zombies.remove(Zombie)
+                    ui.points += 10
             
 class UI:
     def __init__(self):
         self.show = True
-        self.place_tower = False
-        self.spawn_troop = False
+        self.place_bunker = False
+        self.place_trench = False
         self.repair = False
         self.upgrade_bunker = False
         self.next_wave = False
@@ -134,32 +242,33 @@ class UI:
     def click(self,pos):
         if pos[0] >= 10 and pos[0] <= 130:
             if pos[1] >= 10 and pos[1] <= 130:
-                if self.place_tower == False:
-                    self.place_tower = True
+                if self.place_bunker == False:
+                    self.place_bunker = True
+                    self.place_trench = False
                     self.spawn_troop = False
                     self.repair = False
                     self.upgrade_bunker = False
                     self.next_wave = False
-                elif self.place_tower == True:
+                elif self.place_bunker == True:
                     self.place_tower = False
-                print("Place Tower?",self.place_tower)
+                print("Place Tower?",self.place_bunker)
         if pos[0] >= 140 and pos[0] <= 260:
             if pos[1] >= 10 and pos[1] <= 130:
-                if self.spawn_troop == False:
-                    self.spawn_troop = True
-                    self.place_tower = False
+                if self.place_trench == False:
+                    self.place_trench = True
+                    self.place_bunker = False
                     self.repair = False
                     self.upgrade_bunker = False
                     self.next_wave = False
-                elif self.spawn_troop == True:
+                elif self.place_trench == True:
                     self.spawn_troop = False
-                print("Spawn Troop?",self.spawn_troop)
+                print("Spawn Troop?",self.place_trench)
         if pos[0] >= 270 and pos[0] <= 390:
             if pos[1] >= 10 and pos[1] <= 130:
                 if self.repair == False:
                     self.repair = True
-                    self.place_tower = False
-                    self.spawn_troop = False
+                    self.place_bunker = False
+                    self.place_trench = False
                     self.upgrade_bunker = False
                     self.next_wave = False
                 elif self.repair == True:
@@ -169,18 +278,13 @@ class UI:
             if pos[1] >= 10 and pos[1] <= 130:
                 if self.upgrade_bunker == False:
                     self.upgrade_bunker = True
-                    self.place_tower = False
-                    self.spawn_troop = False
+                    self.place_bunker = False
+                    self.place_trench = False
                     self.repair = False
                     self.next_wave = False
                 elif self.upgrade_bunker == True:
                     self.upgrade_bunker = False
                 print("Upgrade?",self.upgrade_bunker)
-        if pos[0] >= 530 and pos[0] <= 650:
-            if pos[1] >= 10 and pos[1] <= 130:
-                self.next_wave = True
-                self.wave += 1
-            print("Next Wave?",self.next_wave)
         if pos[0] >= 660 and pos[0] <= 735:
             if pos[1] >= 10 and pos[1] <= 130:
                 self.game_speed += 1
@@ -192,12 +296,13 @@ class UI:
         if zombie.total_zombies <= 0:
             self.next_wave = True
         if self.next_wave == True:
+            zombie.zombies = []
             zombie.spawn()
+            self.wave += 1
             self.next_wave = False
         
     def draw(self,canvas):
         if self.show == True:
-            self.spawn_wave()
             canvas.draw_polygon([[5,5],[5,135],[745,135],[745,5]],10,'Red','White')
             canvas.draw_polygon([(5,140),(5,224),(155,224),(155,140)],10,'Red','White')
             canvas.draw_polygon([(10,10),(10,130),(130,130),(130,10)],1,'Blue','Black')
@@ -218,12 +323,13 @@ class UI:
 
 base = Base()
 bunker = Bunker()
+trench = Trench()
 ui = UI()
 zombie = Zombie()
 zombie.spawn()
 
 def dist(point1,point2):
-    distance = ((point2[0]-point1[0])**2+(point2[1] - point1[1])**2)**0.5
+    distance = ((point2[0]-point1[0])**2 + (point2[1] - point1[1])**2)**0.5
     return distance
 
 def draw(canvas):
@@ -233,10 +339,12 @@ def draw(canvas):
     ui.spawn_wave()
     ui.draw(canvas)
     bunker.draw(canvas)
+    trench.draw(canvas)
 
 def mouseclick_handler(pos):
     ui.click(pos)
     bunker.click(pos)
+    trench.click(pos)
     
 frame = simplegui.create_frame("Tower Defense", 750, 500)
 frame.set_draw_handler(draw)
