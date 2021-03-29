@@ -33,15 +33,15 @@ class Trench:
         self.clicks_left = 2
         self.trenches = []
         self.range = 150
+        self.distance = []
         self.damage = 4
         
     def upgrade(self,pos):
         if ui.upgrade_bunker == True:
             for Trench in trench.trenches:
                 if ui.points >= Trench.level*100:
-                    if pos[0] >= Trench.x1-10 and pos[0] <= Trench.x1+10:
-                        if pos[0] >= Trench.x2-10 and pos[0] <= Trench.x2+10:
-                            if pos[1] >= Trench.y1 and pos[1] <= Trench.y2:
+                    if pos[0] >= Trench.x - 2.5 and pos[0] <= Trench.x + 2.5:
+                        if pos[1] >= Trench.y-50 and pos[1] <= Trench.y+50:
                                 ui.points -= Trench.level*100
                                 Trench.level += 1
                                 Trench.range += 10
@@ -50,15 +50,12 @@ class Trench:
     def place(self,pos):
         if ui.place_trench == True:
             if ui.points >= 200:
-                if self.clicks_left == 2:
+                if self.clicks_left > 0:
                     self.t = Trench()
-                    self.t.x1 = pos[0]
-                    self.t.y1 = pos[1]
-                    self.t.pos = [self.t.x1,self.t.y1]
+                    self.t.x = pos[0]
+                    self.t.y = pos[1]
+                    self.t.pos = [self.t.x,self.t.y]
                     self.clicks_left -= 1
-                elif self.clicks_left == 1:
-                    self.t.x2 = pos[0]
-                    self.t.y2 = pos[1]
                     self.t.show = True
                 else:
                     self.clicks_left = 2
@@ -100,7 +97,7 @@ class Trench:
         for Trench in trench.trenches:
             if Trench.show == True:
                 Trench.attack()
-                canvas.draw_line((Trench.x1,Trench.y1),(Trench.x2,Trench.y2),5,'Brown')
+                canvas.draw_line((Trench.x,Trench.y-50),(Trench.x,Trench.y+50),5,'Brown')
     
 class Bunker:
     def __init__(self):
@@ -262,7 +259,7 @@ class UI:
                     self.next_wave = False
                 elif self.place_trench == True:
                     self.spawn_troop = False
-                print("Spawn Troop?",self.place_trench)
+                print("Place Trench?",self.place_trench)
         if pos[0] >= 270 and pos[0] <= 390:
             if pos[1] >= 10 and pos[1] <= 130:
                 if self.repair == False:
