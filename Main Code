@@ -228,7 +228,7 @@ class Zombie:
     def draw(self,canvas):
         self.drawn_zombies = 0
         for Zombie in zombie.zombies:
-            if zombie.drawn_zombies <= 20:            
+            if zombie.drawn_zombies <= 10:            
                 if Zombie.health > 0:
                     self.drawn_zombies += 1
                     Zombie.attack()
@@ -301,7 +301,7 @@ class UI:
         if pos[0] >= 685-75 and pos[0] <= 685+75:
             if pos[1] >= 10 and pos[1] <= 130:
                 self.game_speed += 1
-                if self.game_speed > 4:
+                if self.game_speed > 10:
                     self.game_speed = 0
                 print("Game Speed",self.game_speed)
                 
@@ -316,8 +316,8 @@ class UI:
         
     def draw(self,canvas):
         if self.show == True:
-            canvas.draw_polygon([[5,5],[5,135],[745,135],[745,5]],10,'Red','White')
-            canvas.draw_polygon([(5,140),(5,224),(155,224),(155,140)],10,'Red','White')
+            canvas.draw_polygon([[5,5],[5,135],[745,135],[745,5]],10,'Blue','White')
+            canvas.draw_polygon([(5,140),(5,224),(155,224),(155,140)],10,'Blue','White')
             canvas.draw_image(ui_place_bunker,(30,24),(60,48),(85,70),(150,120))
             canvas.draw_image(ui_place_trench,(30,24),(60,48),(235,70),(150,120))
             canvas.draw_image(ui_repair,(30,24),(60,48),(385,70),(150,120))
