@@ -24,6 +24,7 @@ class Base:
     
     '''def damage(self):
         if self.health <= 0:
+            
             '''
 
 class Trench:
@@ -31,6 +32,7 @@ class Trench:
         self.health = 40
         self.level = 1
         self.show = False
+        self.attacking = False
         self.length = 0
         self.enemy_pos = []
         self.enemies = []
@@ -93,13 +95,6 @@ class Trench:
                         self.target = self.enemies[i-1]
                         self.enemy_pos = [self.target.x,self.target.y]
                         self.attacking = True
-                        
-        if self.attack_timer <= 0:    
-            if self.attacking == True:
-                self.target.health -= self.damage
-            self.attack_timer = self.fire_rate
-        else:
-            self.attack_timer -= ui.game_speed
                     
     def draw(self,canvas):
         for Trench in trench.trenches:
@@ -107,8 +102,17 @@ class Trench:
                 if ui.upgrade_bunker == True:
                     cost = "$"+str(Trench.level*100)
                     canvas.draw_text(cost,(Trench.x+5,Trench.y),18,"White")
+                    canvas.draw_circle((Trench.x,Trench.y),Trench.range,2,"White")
+            if Trench.attack_timer <= 0:
                 Trench.attack()
-                canvas.draw_line((Trench.x,Trench.y-50),(Trench.x,Trench.y+50),5,'Brown')
+                if Trench.attacking == True:
+                    Trench.target.health -= Trench.damage
+                Trench.attack_timer = Trench.fire_rate
+            else:
+                Trench.attack_timer -= ui.game_speed
+            canvas.draw_line((Trench.x,Trench.y-50),(Trench.x,Trench.y+50),5,'Brown')
+            if Trench.attacking == True:
+                canvas.draw_line((Trench.pos[0]-2.5,Trench.pos[1]),(Trench.enemy_pos[0],Trench.enemy_pos[1]),1.5,'Yellow')
     
 class Bunker:
     def __init__(self):
@@ -151,11 +155,11 @@ class Bunker:
                 if ui.points >= 50*Bunker.level:
                     if pos[0] >= Bunker.x-5 and pos[0] <= Bunker.x+5:
                         if pos[1] >= Bunker.y-5 and pos[1] <= Bunker.y+5:
-                            ui.points -= 50*Bunker.level
-                            Bunker.level += 1
-                            Bunker.fire_rate -= 5
-                            Bunker.damage += 2
-                            Bunker.range += 50
+                            if Bunker.fire_rate > 0:
+                                ui.points -= 50*Bunker.level
+                                Bunker.level += 1
+                                Bunker.damage += 2
+                                Bunker.range += 50
     def click(self,pos):
         self.upgrade(pos)
         self.place(pos)
@@ -178,32 +182,42 @@ class Bunker:
                         self.target = self.enemies[i-1]
                         self.enemy_pos = [self.target.x,self.target.y]
                         self.attacking = True
-                        
-        if self.attack_timer <= 0:    
-            if self.attacking == True:
-                self.target.health -= self.damage
-            self.attack_timer = self.fire_rate
-        else:
-            self.attack_timer -= ui.game_speed
+                else:
+                    self.target = self.enemies[i-1]
+                    self.enemy_pos = [self.target.x,self.target.y]
+                    self.attacking = True
             
     def draw(self,canvas):
         for Bunker in bunker.bunkers:
             if ui.upgrade_bunker == True:
-                cost = "$"+str(Bunker.level*50)
-                canvas.draw_text(cost,(Bunker.x+10,Bunker.y),18,"White")
-            Bunker.attack()
+                if Bunker.fire_rate > 0:
+                    cost = "$"+str(Bunker.level*50)
+                    canvas.draw_text(cost,(Bunker.x+10,Bunker.y),18,"White")
+                else:
+                    cost = "Max Level"
+                    canvas.draw_text(cost,(Bunker.x+10,Bunker.y),18,"White")
+                canvas.draw_circle((Bunker.x,Bunker.y),Bunker.range,2,"White")
+
+            if Bunker.attack_timer <= 0: 
+                Bunker.attack()
+                if Bunker.attacking == True:
+                    Bunker.target.health -= Bunker.damage
+                Bunker.attack_timer = Bunker.fire_rate
+            else:
+                Bunker.attack_timer -= ui.game_speed
+                
             canvas.draw_polygon([(Bunker.x-5,Bunker.y-5),(Bunker.x-5,Bunker.y+5),(Bunker.x+5,Bunker.y+5),(Bunker.x+5,Bunker.y-5)],1,'Black','Gray')
-            #if Bunker.attacking == True:
-            #    canvas.draw_line((Bunker.pos[0]-5,Bunker.pos[1]),(Bunker.enemy_pos[0],Bunker.enemy_pos[1]),1.5,'Yellow')
+            if Bunker.attacking == True:
+                canvas.draw_line((Bunker.pos[0]-5,Bunker.pos[1]),(Bunker.enemy_pos[0],Bunker.enemy_pos[1]),1.5,'Yellow')
     
 class Zombie:
     def __init__(self):
         self.x = random.randint(-10,-1)
         self.y = random.randint(229,495)
+        self.type = ''
         self.pos = [self.x,self.y]
-        self.health = 10
-        self.speed = 0.275
         self.zombie_amount = random.randint(ui.wave*2,ui.wave*10)
+        self.zombie_types = ['normal','strong','charger','spitter','mole','speed']
         self.zombies = []
         self.total_zombies = 0
         self.drawn_zombies = 0
@@ -213,11 +227,30 @@ class Zombie:
         self.zombie_amount = random.randint(ui.wave*2,ui.wave*10)
         for i in range(self.zombie_amount):
             z = Zombie()
+            z.type = random.randint(1,100)
+            if z.type <= 75:
+                z.health = 10
+                z.speed = 0.275
+            elif z.type <= 80:
+                z.health = 20
+                z.speed = 0.100
+            elif z.type <= 85:
+                z.health = 15
+                z.speed = 0.295
+            elif z.type <= 90:
+                z.health = 10
+                z.speed = 0.270
+            elif z.type <= 95:
+                z.health = 5
+                z.speed = 0.325
+            elif z.type <= 100:
+                z.health = 10
+                z.speed = 0.300
             self.total_zombies += 1
             self.zombies.append(z)
             
     def attack(self):
-        if self.x >= 590:
+        if self.x >= 705:
             self.speed = 0
             base.health -= 10*ui.game_speed
             
@@ -228,7 +261,7 @@ class Zombie:
     def draw(self,canvas):
         self.drawn_zombies = 0
         for Zombie in zombie.zombies:
-            if zombie.drawn_zombies <= 10:            
+            if zombie.drawn_zombies <= 25:            
                 if Zombie.health > 0:
                     self.drawn_zombies += 1
                     Zombie.attack()
